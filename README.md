@@ -1,7 +1,7 @@
 # ADetailer for Stable Diffusion XL
 
 This project is a modified version of [ADetailer](https://github.com/Bing-su/adetailer), an extension for the A1111 WebUI for Stable Diffusion. This modification allows the package to run directly through code, enabling users to import it, follow the provided example Python file, and perform inference. It can also be integrated into other projects.
-
+I have modified the code from diffusers Adetailer for SD1.5 [asdff](https://github.com/Bing-su/asdff)
 ## Features
 
 - **Integration with Stable Diffusion XL**: This modified version works specifically with Stable Diffusion XL, a text-to-image model.
