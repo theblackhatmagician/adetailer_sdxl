@@ -13,14 +13,14 @@ from diffusers import (
     StableDiffusionXLPipeline,
 )
 
-from asdff.utils import (
+from .utils import (
     ADOutput,
     bbox_padding,
     composite,
     mask_dilate,
     mask_gaussian_blur,
 )
-from asdff.yolo import yolo_detector
+from .yolo import yolo_detector
 
 logger = logging.get_logger("diffusers")
 
