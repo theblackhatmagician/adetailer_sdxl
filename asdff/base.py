@@ -11,6 +11,8 @@ from functools import cached_property
 from diffusers import (
     StableDiffusionXLInpaintPipeline,
     StableDiffusionXLPipeline,
+    StableDiffusionPipeline,
+    StableDiffusionInpaintPipeline,
 )
 
 from asdff.utils import (
@@ -33,20 +35,72 @@ def ordinal(n: int) -> str:
     return str(n) + ("th" if 11 <= n % 100 <= 13 else d.get(n % 10, "th"))
 
 
-class AdPipelineBase(StableDiffusionXLPipeline):
+class AdPipelineBase:
+    def __init__(self, *args, **kwargs):
+        if len(args) == 1 and isinstance(args[0], (StableDiffusionXLPipeline, StableDiffusionPipeline)):
+            # If a pipeline is passed directly
+            self.pipe = args[0]
+            for attr in dir(self.pipe):
+                if not attr.startswith('__'):
+                    setattr(self, attr, getattr(self.pipe, attr))
+        else:
+            # If components are passed as kwargs
+            self.pipe = None
+            # Map component names to attributes
+            component_map = {
+                'vae': 'vae',
+                'text_encoder': 'text_encoder',
+                'text_encoder_2': 'text_encoder_2',
+                'tokenizer': 'tokenizer',
+                'tokenizer_2': 'tokenizer_2',
+                'unet': 'unet',
+                'scheduler': 'scheduler',
+                'safety_checker': 'safety_checker',
+                'feature_extractor': 'feature_extractor',
+                # Add mappings for component dictionary keys
+                'vae_decoder': 'vae',
+                'vae_encoder': 'vae',
+                'text_encoder_one': 'text_encoder',
+                'text_encoder_two': 'text_encoder_2',
+                'tokenizer_one': 'tokenizer',
+                'tokenizer_two': 'tokenizer_2'
+            }
+            
+            for key, value in kwargs.items():
+                if key in component_map:
+                    setattr(self, component_map[key], value)
+
     @cached_property
     def inpaint_pipeline(self):
-        print("Loading StableDiffusionXLInpaintPipeline")
-        return StableDiffusionXLInpaintPipeline(
-            vae=self.vae,
-            text_encoder=self.text_encoder,
-            text_encoder_2=self.text_encoder_2,
-            tokenizer=self.tokenizer,   
-            tokenizer_2=self.tokenizer_2,
-            unet=self.unet,
-            scheduler=self.scheduler,
-            feature_extractor=self.feature_extractor,
-        )
+        if self.pipe:
+            is_xl = isinstance(self.pipe, StableDiffusionXLPipeline)
+        else:
+            # Detect if XL based on presence of text_encoder_2
+            is_xl = hasattr(self, 'text_encoder_2')
+
+        if is_xl:
+            print("Loading StableDiffusionXLInpaintPipeline")
+            return StableDiffusionXLInpaintPipeline(
+                vae=self.vae,
+                text_encoder=self.text_encoder,
+                text_encoder_2=self.text_encoder_2,
+                tokenizer=self.tokenizer,   
+                tokenizer_2=self.tokenizer_2,
+                unet=self.unet,
+                scheduler=self.scheduler,
+                feature_extractor=self.feature_extractor,
+            )
+        else:
+            print("Loading StableDiffusionInpaintPipeline")
+            return StableDiffusionInpaintPipeline(
+                vae=self.vae,
+                text_encoder=self.text_encoder,
+                tokenizer=self.tokenizer,
+                unet=self.unet,
+                scheduler=self.scheduler,
+                safety_checker=self.safety_checker if hasattr(self, 'safety_checker') else None,
+                feature_extractor=self.feature_extractor if hasattr(self, 'feature_extractor') else None,
+            )
 
     def __call__(  # noqa: C901
         self,
